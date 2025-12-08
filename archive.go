@@ -69,3 +69,22 @@ func Copy(r *os.File, w io.Writer, format string) (Archive, error) {
 	}
 	return nil, fmt.Errorf("invalid archive format: %s", format)
 }
+
+// Unarchive extracts the source archive to destination according to format.
+// opts controls strip top dir and overwrite behavior.
+func Unarchive(src, dest, format string, opts config.ExtractOptions) error {
+	switch format {
+	case "tar.gz", "tgz":
+		return targz.ExtractTargz(src, dest, opts)
+	case "tar":
+		return tar.ExtractTar(src, dest, opts)
+	case "tar.xz", "txz":
+		return tarxz.ExtractTarXZ(src, dest, opts)
+	case "tar.zst", "tzst":
+		return tarzst.ExtractTarZST(src, dest, opts)
+	case "zip":
+		return zip.ExtractZip(src, dest, opts)
+	default:
+		return fmt.Errorf("unsupported archive format: %s", format)
+	}
+}
