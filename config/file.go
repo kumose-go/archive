@@ -20,6 +20,8 @@ package config
 import (
 	"os"
 	"time"
+
+	"github.com/invopop/jsonschema"
 )
 
 // File is a file inside an archive.
@@ -38,4 +40,37 @@ type FileInfo struct {
 	Mode        os.FileMode `yaml:"mode,omitempty" json:"mode,omitempty"`
 	MTime       string      `yaml:"mtime,omitempty" json:"mtime,omitempty"`
 	ParsedMTime time.Time   `yaml:"-" json:"-"`
+}
+
+// UnmarshalYAML is a custom unmarshaler that wraps strings in arrays.
+func (f *File) UnmarshalYAML(unmarshal func(any) error) error {
+	type t File
+	var str string
+	if err := unmarshal(&str); err == nil {
+		*f = File{Source: str}
+		return nil
+	}
+
+	var file t
+	if err := unmarshal(&file); err != nil {
+		return err
+	}
+	*f = File(file)
+	return nil
+}
+
+func (f File) JSONSchema() *jsonschema.Schema {
+	type fileAlias File
+	reflector := jsonschema.Reflector{
+		ExpandedStruct: true,
+	}
+	schema := reflector.Reflect(&fileAlias{})
+	return &jsonschema.Schema{
+		OneOf: []*jsonschema.Schema{
+			{
+				Type: "string",
+			},
+			schema,
+		},
+	}
 }
